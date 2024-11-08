@@ -1,0 +1,44 @@
+.header {
+    background-image: linear-gradient(to bottom left, #9d64d2, #4561c9, #0782be);
+    padding-left: 3rem;
+    padding-right: 3rem;
+    min-height: 600px;
+}
+
+.header-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 1.5rem;
+    background-color: transparent;
+    padding-bottom: 100vh;
+}
+
+.header-container div {
+    display: inline-block;
+    margin-left: 2rem;
+    /* background-color: tomato; */
+}
+
+
+.header-container .header-text {
+    width: 400px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 2rem;
+
+    p {
+        font-size: 1.5rem;
+    }
+
+    font-weight: 500;
+    color: #ffffff;
+    text-decoration: none;
+    cursor: pointer;
+    text-align: left;
+    line-height: 1.5;
+}
+
+.header-container img {
+    width: 600px;
+    height: auto;
+}

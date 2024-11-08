@@ -1,0 +1,92 @@
+.navbar li,
+.navbar a,
+.navbar button {
+    font-family: 'Roboto', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: #b0b66480;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.navbar {
+    width: 100%;
+    position: fixed;
+    z-index: 1000;
+    padding-left: 3rem;
+    padding-right: 3rem;
+    padding-top: .5rem;
+}
+
+.nav-left {
+    width: 20%;
+    /* background-color: cadetblue; */
+
+    img {
+        justify-self: left;
+        width: auto;
+        height: 40px;
+
+    }
+}
+
+.nav-right {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-center {
+    padding-left: 5%;
+}
+
+.navbar .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.5rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    background-color: transparent;
+}
+
+.navlinks {
+    list-style: none;
+}
+
+.nav-center .navitem {
+    display: inline-block;
+    margin-left: 1.3rem;
+
+    a {
+        color: #fff;
+        -webkit-animation: glow 1s ease-in-out infinite alternate;
+        -moz-animation: glow 1s ease-in-out infinite alternate;
+        animation: glow 1s ease-in-out infinite alternate;
+    }
+}
+
+.nav-right .navitem {
+    display: inline-block;
+    margin-left: .5rem;
+    /* background-color: bisque; */
+}
+
+.nav-right .icons-container {
+    padding-right: 1.5rem;
+
+    img {
+        height: 40px;
+    }
+}
+
+
+@-webkit-keyframes glow {
+    from {
+        text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #e60073;
+    }
+
+    to {
+        text-shadow: 0 0 10px #fff, 0 0 15px #ff4da6, 0 0 20px #ff4da6;
+    }
+}
