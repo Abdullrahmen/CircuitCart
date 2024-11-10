@@ -1,0 +1,17 @@
+.footer {
+    background-color: #333;
+    background-image: linear-gradient(to bottom left, #9d64d2, #4561c9, #0782be);
+    color: white;
+    text-align: center;
+    padding-top: 1rem;
+    bottom: 0;
+    width: 100%;
+    min-height: 250px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    h1 {
+        font-size: xx-large;
+    }
+}

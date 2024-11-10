@@ -2,7 +2,7 @@
 .navbar a,
 .navbar button {
     font-family: 'Roboto', sans-serif;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 400;
     color: #b0b66480;
     text-decoration: none;
@@ -60,9 +60,9 @@
 
     a {
         color: #fff;
-        -webkit-animation: glow 1s ease-in-out infinite alternate;
-        -moz-animation: glow 1s ease-in-out infinite alternate;
-        animation: glow 1s ease-in-out infinite alternate;
+        /* -webkit-animation: glow 1s ease-in-out infinite alternate;
+-moz-animation: glow 1s ease-in-out infinite alternate;
+animation: glow 1s ease-in-out infinite alternate; */
     }
 }
 
@@ -80,13 +80,26 @@
     }
 }
 
+.btn {
+    /* background-color: #3628ff; */
+    background-color: #2882ff;
+    color: #ffffff !important;
+    padding: 0.5rem 1rem;
+    border-radius: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+
+    &:hover {
+        background-color: #914dff;
+    }
+}
 
 @-webkit-keyframes glow {
     from {
-        text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #e60073;
+        text-shadow: 0 0 0px #fff, 0 0 5px #fff, 0 0 10px #1300e6a1;
     }
 
     to {
-        text-shadow: 0 0 10px #fff, 0 0 15px #ff4da6, 0 0 20px #ff4da6;
+        text-shadow: 0 0 5px #fff, 0 0 10px #914dff, 0 0 15px #914dff;
     }
 }

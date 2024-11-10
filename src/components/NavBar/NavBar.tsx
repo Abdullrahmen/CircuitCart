@@ -12,7 +12,7 @@ function NavSignItem(props: { text: string; link: string }) {
     return (
         <li className="navitem">
             <a href={props.link}>
-                <button>{props.text}</button>
+                <button className="btn">{props.text}</button>
             </a>
         </li>
     );

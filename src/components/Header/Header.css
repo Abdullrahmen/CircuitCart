@@ -1,5 +1,8 @@
 .header {
     background-image: linear-gradient(to bottom left, #9d64d2, #4561c9, #0782be);
+    /* mask-image: url(../../assets/images/header-mask.png);
+-webkit-mask-image: url(../../assets/images/header-mask.png);
+mask-repeat: no-repeat; */
     padding-left: 3rem;
     padding-right: 3rem;
     min-height: 600px;
@@ -11,7 +14,7 @@
     align-items: center;
     padding-top: 1.5rem;
     background-color: transparent;
-    padding-bottom: 100vh;
+    /* padding-bottom: 100vh; */
 }
 
 .header-container div {
@@ -24,21 +27,83 @@
 .header-container .header-text {
     width: 400px;
     font-family: 'Roboto', sans-serif;
-    font-size: 2rem;
-
-    p {
-        font-size: 1.5rem;
-    }
-
     font-weight: 500;
     color: #ffffff;
     text-decoration: none;
-    cursor: pointer;
     text-align: left;
     line-height: 1.5;
+
+    h1 {
+        font-size: 3rem;
+    }
+
+    p {
+        font-size: large;
+    }
 }
 
 .header-container img {
     width: 600px;
     height: auto;
+}
+
+.header-text .btn {
+    margin-top: 1.5rem;
+    padding: 0.5rem 2.5rem;
+    font-size: 1.3rem;
+}
+
+/*********************** Loader **********************/
+
+.loader {
+    --loader_size: 20px;
+    /* control the size */
+    --loader_border: 9px;
+    /* control the border thickness */
+
+    width: calc(8*var(--loader_size));
+    aspect-ratio: 4;
+    background:
+        linear-gradient(#f8ffc0 50%, #ecd3ff 0) no-repeat,
+        linear-gradient(#b7bcff 50%, #ffffff 0) no-repeat;
+    background-size: 50% 200%;
+    --_g: calc(-.45*var(--loader_size)), #0000 calc(99% - var(--loader_border)), #000 calc(101% - var(--loader_border)) 99%, #0000 101%;
+    --_s: calc(4*var(--loader_size)) var(--loader_size) repeat-x;
+    --_r: calc(1.096*var(--loader_size) + var(--loader_border)/2);
+    -webkit-mask:
+        radial-gradient(var(--_r) at left 50% bottom var(--_g)) calc(50% - 2*var(--loader_size)) calc(50% - var(--loader_size)/2)/var(--_s),
+        radial-gradient(var(--_r) at left 50% top var(--_g)) 50% calc(50% + var(--loader_size)/2)/var(--_s);
+    animation:
+        back 6s infinite steps(1),
+        load 1.5s infinite linear alternate;
+}
+
+@keyframes load {
+    0% {
+        clip-path: inset(0 75% 0 0)
+    }
+
+    to {
+        clip-path: inset(0 0 0 75%)
+    }
+}
+
+@keyframes back {
+
+    0%,
+    100% {
+        background-position: 0% 0%, 100% 0%
+    }
+
+    25% {
+        background-position: 0% 100%, 100% 0%
+    }
+
+    50% {
+        background-position: 0% 100%, 100% 100%
+    }
+
+    75% {
+        background-position: 0% 0%, 100% 100%
+    }
 }

@@ -6,7 +6,9 @@ function HeaderText() {
         <div className="header-text">
             <h1>CircuitCart</h1>
             <p>E-commerce for electronic circuit components </p>
-            <button>Shop Now</button>
+            <p>Get your electronic components at the best prices</p>
+            <button className="btn">Shop Now</button>
+            <div className="loader"></div>
         </div>
     );
 }
@@ -28,6 +30,8 @@ function Header() {
                     <HeaderText />
                     <HeaderImage />
                 </div>
+                {/*Todo <svg wave> https://svgwave.in/
+				blog.logrocket.com/create-wavy-background-using-css-svg/*/}
             </div>
         </>
     );
