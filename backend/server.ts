@@ -12,13 +12,17 @@ Packages:
 - Jest (for testing)
 */
 import dotenv from "dotenv";
-import mongoose, { mongo } from "mongoose";
+import mongoose from "mongoose";
 import express from "express";
 import cors from "cors";
 
 dotenv.config();
 const app = express();
-const URI = process.env.MONGO_URI;
+
+/* connect to MongoDB */
+const DB_NAME = "CircuitCart_dev";
+let URI: string = process.env.MONGO_URI || "";
+URI = `${URI.split("/").slice(0, 3).join("/")}/${DB_NAME}${URI.split("/")[3]}`;
 mongoose
   .connect(URI)
   .then(() => {
@@ -27,12 +31,13 @@ mongoose
   .catch((error) => {
     console.log(error);
   });
-
 app.use(express.json());
 app.use(cors());
 
+/*productsRouter = require("./routers/products.route");*/
+/*app.use("/api/products", productsRouter);*/
 app.get("/", (req, res) => {
-  res.send("Server is ready");
+  res.json({ message: "Server is ready" });
 });
 
 const PORT = process.env.PORT || 5000;

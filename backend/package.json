@@ -1,19 +1,30 @@
 {
-  "name": "backend",
-  "version": "1.0.0",
+  "name": "circuit_cart_mern",
+  "version": "0.0.0",
+  "description": "E-commerce website",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server.js"
+    "dev": "nodemon ./server.ts"
   },
   "author": "Abdullrahmen",
-  "license": "ISC",
-  "description": "",
+  "license": "CC0-1.0",
+  "devDependencies": {
+    "@eslint/js": "^9.16.0",
+    "@types/cors": "^2.8.17",
+    "@types/dotenv": "^6.1.1",
+    "@types/express": "^5.0.0",
+    "@types/mongoose": "^5.11.96",
+    "eslint": "^9.16.0",
+    "globals": "^15.13.0",
+    "nodemon": "^3.1.7",
+    "ts-node": "^10.9.2",
+    "typescript-eslint": "^8.17.0"
+  },
   "dependencies": {
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.4.7",
     "express": "^4.21.1",
-    "mongoose": "^8.8.1",
-    "nodemon": "^3.1.7"
+    "mongoose": "^8.8.3"
   }
 }
