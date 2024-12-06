@@ -5,14 +5,24 @@ import { Request, Response, NextFunction } from 'express';
 import { generateToken, validateUser } from '../utils/loginUtils';
 import AsyncError from '../middlewares/asyncErrorWrapper';
 import appError from '../utils/appError';
+import mongoose from 'mongoose';
+import { ITokenRequest } from '../interfaces/TokenRequest';
+import { JwtPayload } from 'jsonwebtoken';
 
-const getAllUsers = (userModel: IUserModel) =>
-  AsyncError(async (req: Request, res: Response) => {
-    const sellers = await userModel.find({});
-    res.json({ status: httpStatusText.SUCCESS, data: { sellers } });
-  });
+const deleteCollection = async (collectionName: string) => {
+  if (!mongoose.connection.readyState) {
+    throw new Error('Database connection is not established');
+  }
 
-const userLogin = (account_type: string, userModel: IUserModel) =>
+  const db = mongoose.connection.db;
+  if (!db) {
+    throw new Error('Database object is not available');
+  }
+
+  return await db.dropCollection(collectionName);
+};
+
+const userLogin = (account_type: string) =>
   AsyncError(async (req: Request, res: Response, next: NextFunction) => {
     const body = req.body;
     if (!accountTypes.ALL.includes(account_type)) {
@@ -24,7 +34,7 @@ const userLogin = (account_type: string, userModel: IUserModel) =>
       return next(err);
     }
 
-    const user = validateUser(body.email, body.password, userModel);
+    const user = await validateUser(body.email, body.password, account_type);
     if (!user) {
       const err = new appError(
         'Invalid email or password',
@@ -69,4 +79,40 @@ const userLogin = (account_type: string, userModel: IUserModel) =>
     });
   });
 
-export { getAllUsers, userLogin };
+const deleteThis = (account_type: string) =>
+  AsyncError(async (req: ITokenRequest, res: Response, next: NextFunction) => {
+    const jwt_data = req.jwt_data as JwtPayload;
+    const userModel = mongoose.model(
+      ...accountTypes.ModelArgs[
+        account_type as keyof typeof accountTypes.ModelArgs
+      ]
+    );
+    const user = await (userModel as unknown as IUserModel).findOneAndDelete({
+      'user.email': jwt_data.email,
+    });
+    if (!user) {
+      const err = new appError('User not found', 404, httpStatusText.FAIL);
+      return next(err);
+    }
+    res.json({ status: httpStatusText.SUCCESS, data: { user } });
+  });
+
+const getThis = (account_type: string) =>
+  AsyncError(async (req: ITokenRequest, res: Response, next: NextFunction) => {
+    const jwt_data = req.jwt_data as JwtPayload;
+    const userModel = mongoose.model(
+      ...accountTypes.ModelArgs[
+        account_type as keyof typeof accountTypes.ModelArgs
+      ]
+    );
+    const user = await (userModel as unknown as IUserModel).findOne({
+      'user.email': jwt_data.email,
+    });
+    if (!user) {
+      const err = new appError('Seller not found', 404, httpStatusText.FAIL);
+      return next(err);
+    }
+    res.json({ status: httpStatusText.SUCCESS, data: { user } });
+  });
+
+export { userLogin, deleteCollection, deleteThis, getThis };

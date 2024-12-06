@@ -3,7 +3,9 @@ import appError from '../utils/appError';
 import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
+import accountTypes from './accountTypes';
 import { IUserModel } from '../interfaces/UserModel';
+import mongoose from 'mongoose';
 dotenv.config();
 
 const generateToken = async (
@@ -31,9 +33,16 @@ const generateToken = async (
 const validateUser = async (
   email: string,
   password: string,
-  userModel: IUserModel
+  account_type: string
 ) => {
-  const user = await userModel.findOne({ 'user.email': email });
+  const userModel = mongoose.model(
+    ...accountTypes.ModelArgs[
+      account_type as keyof typeof accountTypes.ModelArgs
+    ]
+  );
+  const user = await (userModel as unknown as IUserModel).findOne({
+    'user.email': email,
+  });
   if (!user) {
     return null;
   }

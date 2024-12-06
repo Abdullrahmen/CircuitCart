@@ -51,6 +51,7 @@ const validateToken = (allowed_account_types: string[]) =>
       return next(err);
     }
     req.jwt_data = verified as jwt.JwtPayload;
+
     next();
   });
 

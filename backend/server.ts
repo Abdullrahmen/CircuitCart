@@ -17,6 +17,7 @@ import express, { NextFunction } from 'express';
 import cors from 'cors';
 import { Request, Response } from 'express';
 import AppError from './utils/appError';
+import httpStatusText from './utils/httpStatusText';
 
 dotenv.config();
 const app = express();
@@ -36,13 +37,15 @@ mongoose
 app.use(express.json());
 app.use(cors());
 
-app.get('/', (req, res) => {
-  res.json({ message: 'Server is ready' });
+app.get('/', (_req, res) => {
+  res.json({ status: 'success', message: 'Welcome to CircuitCart API' });
 });
 
 import sellersRouter from './routes/sellers.route';
-import httpStatusText from './utils/httpStatusText';
 app.use('/api/users/sellers', sellersRouter);
+
+// import buyersRouter from './routes/buyers.route';
+// app.use('/api/users/buyers', buyersRouter);
 
 // global middleware for not found router
 app.all('*', (_req: Request, res: Response) => {

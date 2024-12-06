@@ -6,9 +6,15 @@ const router = Router();
 
 router
   .route('/')
-  .get([validateToken(accountTypes.ALL), controller.getAllSellers]);
+  .get([validateToken(accountTypes.ALL), controller.getAllSellers])
+  .delete([validateToken(accountTypes.ALL), controller.deleteAllSellers]);
+// router.route('/sellers/:id') -> managers
 
-router.route('/u').get([validateToken(accountTypes.ALL), controller.getSeller]);
+// sellers/u
+router
+  .route('/u')
+  .get([validateToken([accountTypes.SELLER]), controller.getThisSeller])
+  .delete([validateToken([accountTypes.SELLER]), controller.deleteThisSeller]);
 
 router.route('/register').post(controller.register);
 
