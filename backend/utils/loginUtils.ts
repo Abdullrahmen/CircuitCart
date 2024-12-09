@@ -4,7 +4,6 @@ import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import accountTypes from './accountTypes';
-import { IUserModel } from '../interfaces/UserModel';
 import mongoose from 'mongoose';
 dotenv.config();
 
@@ -35,12 +34,10 @@ const validateUser = async (
   password: string,
   account_type: string
 ) => {
-  const userModel = mongoose.model(
-    ...accountTypes.ModelArgs[
-      account_type as keyof typeof accountTypes.ModelArgs
-    ]
-  );
-  const user = await (userModel as unknown as IUserModel).findOne({
+  const args =
+    accountTypes.ModelArgs[account_type as keyof typeof accountTypes.ModelArgs];
+  const userModel = mongoose.model(args[0], args[1]);
+  const user = await userModel.findOne({
     'user.email': email,
   });
   if (!user) {
@@ -54,4 +51,4 @@ const validateUser = async (
   return user;
 };
 
-export { generateToken, validateUser, IUserModel };
+export { generateToken, validateUser };

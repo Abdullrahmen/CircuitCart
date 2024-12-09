@@ -3,7 +3,7 @@ import types from '../utils/paramsTypes';
 
 const Schema = mongoose.Schema;
 
-const paramSubModel = new Schema(
+const paramSubSchema = new Schema(
   {
     name: { type: String, required: true },
     type: { type: String, enum: types.ALL, required: true },
@@ -11,9 +11,10 @@ const paramSubModel = new Schema(
   { _id: false }
 );
 
-const categoryModel = new Schema({
-  name: { type: String, required: true },
-  main_params: [paramSubModel],
+const categorySchema = new Schema({
+  name: { type: String, required: true, unique: true },
+  main_params: [paramSubSchema],
 });
 
-export default mongoose.model('Category', categoryModel);
+const categoryModel = mongoose.model('Category', categorySchema);
+export { categoryModel, categorySchema };
