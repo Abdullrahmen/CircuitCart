@@ -7,7 +7,7 @@ import httpStatusText from '../utils/httpStatusText';
 import AsyncError from './asyncErrorWrapper';
 dotenv.config();
 
-const validateToken = (allowed_account_types: string[]) =>
+const validateTokenFunction = (allowed_account_types: string[]) =>
   AsyncError(async (req: ITokenRequest, res: Response, next: NextFunction) => {
     const token_header = process.env.TOKEN_HEADER_KEY || '';
     if (!token_header) {
@@ -51,8 +51,13 @@ const validateToken = (allowed_account_types: string[]) =>
       return next(err);
     }
     req.jwt_data = verified as jwt.JwtPayload;
+  });
 
+const validateToken = (allowed_account_types: string[]) =>
+  AsyncError(async (req: ITokenRequest, res: Response, next: NextFunction) => {
+    await validateTokenFunction(allowed_account_types)(req, res, next);
     next();
   });
 
 export default validateToken;
+export { validateTokenFunction };

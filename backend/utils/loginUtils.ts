@@ -37,9 +37,11 @@ const validateUser = async (
   const args =
     accountTypes.ModelArgs[account_type as keyof typeof accountTypes.ModelArgs];
   const userModel = mongoose.model(args[0], args[1]);
-  const user = await userModel.findOne({
-    'user.email': email,
-  });
+  const user = await userModel
+    .findOne({
+      'user.email': email,
+    })
+    .lean();
   if (!user) {
     return null;
   }

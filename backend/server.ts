@@ -47,8 +47,14 @@ app.use('/api/users/sellers', sellersRouter);
 import buyersRouter from './routes/buyers.route';
 app.use('/api/users/buyers', buyersRouter);
 
+import managersRouter from './routes/managers.route';
+app.use('/api/users/managers', managersRouter);
+
 import categoriesRouter from './routes/categories.route';
 app.use('/api/categories', categoriesRouter);
+
+import productsRouter from './routes/products.route';
+app.use('/api/products', productsRouter);
 
 // global middleware for not found router
 app.all('*', (_req: Request, res: Response) => {

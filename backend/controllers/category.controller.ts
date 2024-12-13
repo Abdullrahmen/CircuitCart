@@ -8,7 +8,7 @@ import httpStatusText from '../utils/httpStatusText';
 
 const getAllCategories = asyncErrorWrapper(
   async (req: Request, res: Response) => {
-    const categories = await categoryModel.find({});
+    const categories = await categoryModel.find({}).lean();
     res.status(200).json({ status: httpStatusText.SUCCESS, data: categories });
   }
 );
@@ -53,7 +53,9 @@ const addCategory = asyncErrorWrapper(
 
 const getCategory = asyncErrorWrapper(
   async (req: Request, res: Response, next: NextFunction) => {
-    const category = await categoryModel.findOne({ name: req.params.name });
+    const category = await categoryModel
+      .findOne({ name: req.params.name })
+      .lean();
     if (!category) {
       const err = new appError('Category not found', 404, httpStatusText.FAIL);
       return next(err);
@@ -65,9 +67,11 @@ const getCategory = asyncErrorWrapper(
 const deleteCategory = asyncErrorWrapper(
   async (req: ITokenRequest, res: Response, next: NextFunction) => {
     await verifyUserFromToken(req);
-    const category = await categoryModel.findOneAndDelete({
-      name: req.params.name,
-    });
+    const category = await categoryModel
+      .findOneAndDelete({
+        name: req.params.name,
+      })
+      .lean();
     if (!category) {
       const err = new appError('Category not found', 404, httpStatusText.FAIL);
       return next(err);

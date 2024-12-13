@@ -86,9 +86,12 @@ const deleteUserFromToken = (account_type: string) =>
         account_type as keyof typeof accountTypes.ModelArgs
       ];
     const userModel = mongoose.model(model_args[0], model_args[1]);
-    const user = await userModel.findOneAndDelete({
-      'user.email': jwt_data.email,
-    });
+    const user = await userModel
+      .findOneAndDelete({
+        'user.email': jwt_data.email,
+      })
+      .lean()
+      .select('-user.password -user._id -__v  -user.updated_at');
     if (!user) {
       const err = new AppError('User not found', 404, httpStatusText.FAIL);
       return next(err);
@@ -104,9 +107,12 @@ const getUserFromToken = (account_type: string) =>
         account_type as keyof typeof accountTypes.ModelArgs
       ];
     const userModel = mongoose.model(model_args[0], model_args[1]);
-    const user = await userModel.findOne({
-      'user.email': jwt_data.email,
-    });
+    const user = await userModel
+      .findOne({
+        'user.email': jwt_data.email,
+      })
+      .lean()
+      .select('-user.password -user._id -__v  -user.updated_at');
     if (!user) {
       const err = new AppError('User not found', 404, httpStatusText.FAIL);
       return next(err);
@@ -142,7 +148,10 @@ const getAllUsersByType = (get_type: string) =>
     const args =
       accountTypes.ModelArgs[get_type as keyof typeof accountTypes.ModelArgs];
     const userModel = mongoose.model(args[0], args[1]);
-    const users = await userModel.find({});
+    const users = await userModel
+      .find({})
+      .lean()
+      .select('-user.password -user._id -__v  -user.updated_at');
     res.json({ status: httpStatusText.SUCCESS, data: users });
   });
 
