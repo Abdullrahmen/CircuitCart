@@ -71,6 +71,7 @@ const userLogin = (account_type: string) =>
     res.json({
       status: httpStatusText.SUCCESS,
       data: {
+        id: user._id,
         [process.env.TOKEN_HEADER_KEY]: token,
         email: body.email,
         account_type: account_type,

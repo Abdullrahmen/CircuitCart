@@ -7,7 +7,7 @@ import httpStatusText from '../utils/httpStatusText';
 import { ITokenRequest } from '../interfaces/TokenRequest';
 import { deleteCollection, verifyUserFromToken } from './user.controller';
 import mongoose from 'mongoose';
-import accountTypes from '../utils/accountTypes';
+import account from '../utils/accountTypes';
 import { sellerModel } from '../models/users.models';
 import { removeItem } from '../utils/array';
 import { validateTokenFunction } from '../middlewares/validateToken';
@@ -54,6 +54,7 @@ const getSelectedProducts = (withHidden = false, withPending = false) =>
     const products = await productModel
       .find(query.query)
       .setOptions(query.options)
+      .populate('reviews')
       .select(exclude)
       .lean(true);
     res.json({
@@ -61,6 +62,59 @@ const getSelectedProducts = (withHidden = false, withPending = false) =>
       data: products,
     });
   });
+
+const getProductsByIds = asyncErrorWrapper(
+  async (req: ITokenRequest, res: Response) => {
+    const ids = req.body.ids;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      throw new AppError('Invalid ids', 400, httpStatusText.FAIL);
+    }
+
+    const token_header = process.env.TOKEN_HEADER_KEY || '';
+    const token = String(req.headers[token_header] || '');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let user: any = null;
+    if (token) {
+      await validateTokenFunction([account.SELLER, account.MANAGER])(req);
+      user = await verifyUserFromToken(req);
+    }
+
+    const products = await productModel
+      .find({ _id: { $in: ids } })
+      .populate('reviews')
+      .select('-__v')
+      .lean();
+
+    // Seller or Manager
+    if (user)
+      if (user.user.account_type === account.MANAGER)
+        return res.json({
+          status: httpStatusText.SUCCESS,
+          data: products,
+        });
+      else if (user.user.account_type === account.SELLER) {
+        const user_products = user.products.map((id: string) => id.toString());
+        const allowed_products = products.filter(
+          (product) =>
+            (!product.isHidden && !product.isPending) ||
+            user_products.includes(product._id.toString())
+        );
+        return res.json({
+          status: httpStatusText.SUCCESS,
+          data: allowed_products,
+        });
+      }
+
+    //Guest user
+    const allowed_products = products.filter(
+      (product) => !product.isHidden && !product.isPending
+    );
+    res.json({
+      status: httpStatusText.SUCCESS,
+      data: allowed_products,
+    });
+  }
+);
 
 const deleteSelectedProducts = (withHidden = false, withPending = false) =>
   asyncErrorWrapper(async (req: ITokenRequest, res: Response) => {
@@ -159,6 +213,7 @@ const addProducts = asyncErrorWrapper(
         isHidden:
           productData.isHidden === undefined ? random : productData.isPending,
         total_sales: 0,
+        stock: productData.stock,
       });
     }
 
@@ -183,7 +238,7 @@ const addProducts = asyncErrorWrapper(
   }
 );
 
-const getProduct = (get_hidden_account_types: string[] = []) =>
+const getProduct = (hidden_for_account_types: string[] = []) =>
   asyncErrorWrapper(
     async (req: ITokenRequest, res: Response, next: NextFunction) => {
       if (!mongoose.Types.ObjectId.isValid(req.params.productId))
@@ -193,16 +248,17 @@ const getProduct = (get_hidden_account_types: string[] = []) =>
       const product = await productModel
         .findById(req.params.productId)
         .select('-__v')
+        .populate('reviews')
         .lean();
       if (!product)
         return next(
           new AppError('Product not found', 404, httpStatusText.FAIL)
         );
       if (product.isHidden || product.isPending) {
-        await validateTokenFunction(get_hidden_account_types)(req, res, next);
+        await validateTokenFunction(hidden_for_account_types)(req);
         const user = await verifyUserFromToken(req);
         if (
-          req.jwt_data?.account_type === accountTypes.SELLER &&
+          req.jwt_data?.account_type === account.SELLER &&
           user._id.toString() !== product.seller?.id.toString()
         )
           return next(
@@ -235,7 +291,7 @@ const deleteProduct = asyncErrorWrapper(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const seller: any = product.seller.id;
     if (
-      req.jwt_data?.account_type === accountTypes.SELLER &&
+      req.jwt_data?.account_type === account.SELLER &&
       user._id.toString() !== seller.id.toString()
     )
       return next(
@@ -258,6 +314,7 @@ export default {
   addProducts,
   deleteSelectedProducts,
   getProduct,
+  getProductsByIds,
   deleteProduct,
   deleteAllProducts,
 };

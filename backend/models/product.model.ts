@@ -16,6 +16,7 @@ const productModel = new Schema({
   reviews: { type: [Schema.Types.ObjectId], ref: 'Review' },
   main_params: { type: [paramSubModel], required: true },
   rating: { type: Number, min: 0, max: 5 },
+  stock: { type: Number, min: 0 },
   isPending: { type: Boolean, required: true },
   isHidden: { type: Boolean, required: true },
   total_sales: { type: Number, required: true, min: 0 },

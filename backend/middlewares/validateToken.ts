@@ -7,8 +7,8 @@ import httpStatusText from '../utils/httpStatusText';
 import AsyncError from './asyncErrorWrapper';
 dotenv.config();
 
-const validateTokenFunction = (allowed_account_types: string[]) =>
-  AsyncError(async (req: ITokenRequest, res: Response, next: NextFunction) => {
+const validateTokenFunction =
+  (allowed_account_types: string[]) => async (req: ITokenRequest) => {
     const token_header = process.env.TOKEN_HEADER_KEY || '';
     if (!token_header) {
       const err = new AppError(
@@ -16,7 +16,7 @@ const validateTokenFunction = (allowed_account_types: string[]) =>
         500,
         httpStatusText.ERROR
       );
-      return next(err);
+      throw err;
     }
 
     const token = String(req.headers[token_header] || '');
@@ -32,30 +32,29 @@ const validateTokenFunction = (allowed_account_types: string[]) =>
         500,
         httpStatusText.ERROR
       );
-      return next(err);
+      throw err;
     }
-
     const verified = await jwt.verify(token, secret);
     if (!verified) {
       const err = new AppError('Invalid token', 401, httpStatusText.FAIL);
-      return next(err);
+      throw err;
     }
+
     if (
       !allowed_account_types.includes((verified as jwt.JwtPayload).account_type)
     ) {
-      const err = new AppError(
+      throw new AppError(
         'Not allowed to access this resource',
         403,
         httpStatusText.FAIL
       );
-      return next(err);
     }
     req.jwt_data = verified as jwt.JwtPayload;
-  });
+  };
 
 const validateToken = (allowed_account_types: string[]) =>
   AsyncError(async (req: ITokenRequest, res: Response, next: NextFunction) => {
-    await validateTokenFunction(allowed_account_types)(req, res, next);
+    await validateTokenFunction(allowed_account_types)(req);
     next();
   });
 

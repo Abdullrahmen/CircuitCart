@@ -1,25 +1,22 @@
 import { Router } from 'express';
 import controller from '../controllers/product.controller';
 import validateToken from '../middlewares/validateToken';
-import accountTypes from '../utils/accountTypes';
+import account from '../utils/accountTypes';
 const router = Router();
 
 // Manager routes
 router
   .route('/manager/collection')
-  .delete([
-    validateToken([accountTypes.MANAGER]),
-    controller.deleteAllProducts,
-  ]);
+  .delete([validateToken([account.MANAGER]), controller.deleteAllProducts]);
 // Search in all products including pending and hidden
 router
   .route('/manager/search')
   .get(
-    validateToken([accountTypes.MANAGER]),
+    validateToken([account.MANAGER]),
     controller.getSelectedProducts(true, true)
   )
   .delete(
-    validateToken([accountTypes.MANAGER]),
+    validateToken([account.MANAGER]),
     controller.deleteSelectedProducts(true, true)
   );
 
@@ -29,18 +26,20 @@ router
   .route('/search')
   .get(controller.getSelectedProducts())
   .delete(
-    validateToken([accountTypes.MANAGER]),
+    validateToken([account.MANAGER]),
     controller.deleteSelectedProducts()
   );
+
+router.route('/ids').get(controller.getProductsByIds);
+
 router
   .route('/product/:productId')
-  .get(controller.getProduct([accountTypes.SELLER, accountTypes.MANAGER]))
+  .get(controller.getProduct([account.SELLER, account.MANAGER]))
   .delete(
-    validateToken([accountTypes.SELLER, accountTypes.MANAGER]),
+    validateToken([account.SELLER, account.MANAGER]),
     controller.deleteProduct
   );
-router
-  .route('/')
-  .post(validateToken([accountTypes.SELLER]), controller.addProducts);
+
+router.route('/').post(validateToken([account.SELLER]), controller.addProducts);
 
 export default router;

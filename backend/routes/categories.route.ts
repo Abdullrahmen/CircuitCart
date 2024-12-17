@@ -1,18 +1,18 @@
 import { Router } from 'express';
 import controller from '../controllers/category.controller';
 import validateToken from '../middlewares/validateToken';
-import accountTypes from '../utils/accountTypes';
+import account from '../utils/accountTypes';
 const router = Router();
 
 router
   .route('/')
   .get(controller.getAllCategories)
   .post([
-    validateToken([accountTypes.SELLER, accountTypes.MANAGER]),
+    validateToken([account.SELLER, account.MANAGER]),
     controller.addCategory,
   ])
   .delete([
-    validateToken([accountTypes.SELLER, accountTypes.MANAGER]),
+    validateToken([account.SELLER, account.MANAGER]),
     controller.deleteAllCategories,
   ]);
 
@@ -20,7 +20,7 @@ router
   .route('/:name')
   .get(controller.getCategory)
   .delete([
-    validateToken([accountTypes.SELLER, accountTypes.MANAGER]),
+    validateToken([account.SELLER, account.MANAGER]),
     controller.deleteCategory,
   ]);
 export default router;

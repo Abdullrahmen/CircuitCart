@@ -1,22 +1,26 @@
 import { Router } from 'express';
 import controller from '../controllers/seller.controller';
 import validateToken from '../middlewares/validateToken';
-import accountTypes from '../utils/accountTypes';
+import account from '../utils/accountTypes';
 const router = Router();
 
 router
   .route('/')
-  .get([validateToken(accountTypes.ALL), controller.getAllSellers])
-  .delete([validateToken(accountTypes.ALL), controller.deleteAllSellers]);
-// router.route('/sellers/:id') -> managers
+  .get([validateToken(account.ALL), controller.getAllSellers])
+  .delete([validateToken(account.ALL), controller.deleteAllSellers]);
+
+router
+  .route('/one/:sellerId')
+  .get(controller.getSellerById([account.MANAGER, account.SELLER]))
+  .delete([
+    validateToken([account.MANAGER, account.SELLER]),
+    controller.deleteSellerById,
+  ]);
 
 router
   .route('/u')
-  .get([validateToken([accountTypes.SELLER]), controller.getSellerFromToken])
-  .delete([
-    validateToken([accountTypes.SELLER]),
-    controller.deleteSellerFromToken,
-  ]);
+  .get([validateToken([account.SELLER]), controller.getSellerFromToken])
+  .delete([validateToken([account.SELLER]), controller.deleteSellerFromToken]);
 
 router.route('/register').post(controller.register);
 

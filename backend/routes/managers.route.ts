@@ -1,24 +1,21 @@
 import { Router } from 'express';
 import controller from '../controllers/manager.controller';
 import validateToken from '../middlewares/validateToken';
-import accountTypes from '../utils/accountTypes';
+import account from '../utils/accountTypes';
 const router = Router();
 
 router
   .route('/')
-  .get([validateToken([accountTypes.MANAGER]), controller.getAllManagers])
-  .delete([
-    validateToken([accountTypes.MANAGER]),
-    controller.deleteAllManagers,
-  ]);
+  .get([validateToken([account.MANAGER]), controller.getAllManagers])
+  .delete([validateToken([account.MANAGER]), controller.deleteAllManagers]);
 
 // router.route('/managers/:id')
 
 router
   .route('/u')
-  .get([validateToken([accountTypes.MANAGER]), controller.getManagerFromToken])
+  .get([validateToken([account.MANAGER]), controller.getManagerFromToken])
   .delete([
-    validateToken([accountTypes.MANAGER]),
+    validateToken([account.MANAGER]),
     controller.deleteManagerFromToken,
   ]);
 
