@@ -48,6 +48,7 @@ const register = AsyncError(
         updated_at: date,
       },
       isGuaranteed: true,
+      pendingOrders: [],
     });
     seller.user.password = await bcrypt.hash(body.password, 12);
 
@@ -93,7 +94,7 @@ const getSellerById = (all_data_for_types: string[]) =>
       //Guest user
       select =
         '-__v -user.password -pendings -user.gender -user.age\
-		-user.last_activity -user.account_type -user.updated_at';
+		-user.last_activity -user.account_type -user.updated_at -pendingOrders';
     }
 
     const seller = await sellerModel
@@ -108,11 +109,7 @@ const getSellerById = (all_data_for_types: string[]) =>
     if (user && user.user.account_type === accountTypes.SELLER)
       if (user._id.toString() !== seller._id.toString()) {
         return next(
-          new AppError(
-            'Unauthorized, not your account.',
-            403,
-            httpStatusText.FAIL
-          )
+          new AppError('Unauthorized, not your account.', 403, httpStatusText.FAIL)
         );
       }
     res.status(200).json({
@@ -129,9 +126,7 @@ const deleteSellerById = AsyncError(
       );
 
     const user = await verifyUserFromToken(req);
-    const seller = await sellerModel
-      .findById(req.params.sellerId)
-      .select('-__v');
+    const seller = await sellerModel.findById(req.params.sellerId).select('-__v');
     if (!seller) {
       return next(
         new AppError('No seller found with that ID.', 404, httpStatusText.FAIL)
@@ -140,11 +135,7 @@ const deleteSellerById = AsyncError(
     if (user.user.account_type === accountTypes.SELLER)
       if (user._id.toString() !== seller._id.toString()) {
         return next(
-          new AppError(
-            'Unauthorized, not your account.',
-            403,
-            httpStatusText.FAIL
-          )
+          new AppError('Unauthorized, not your account.', 403, httpStatusText.FAIL)
         );
       }
     const result = await seller.deleteOne();

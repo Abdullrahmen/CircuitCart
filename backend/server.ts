@@ -59,8 +59,8 @@ app.use('/api/products', productsRouter);
 import ordersRouter from './routes/orders.route';
 app.use('/api/orders', ordersRouter);
 
-import reviewsRouter from './routes/reviews.route';
-app.use('/api/reviews', reviewsRouter);
+// import reviewsRouter from './routes/reviews.route';
+// app.use('/api/reviews', reviewsRouter);
 
 // global middleware for not found router
 app.all('*', (_req: Request, res: Response) => {

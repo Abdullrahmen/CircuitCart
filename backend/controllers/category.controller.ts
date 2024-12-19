@@ -40,7 +40,7 @@ const addCategory = asyncErrorWrapper(
 
     const category = new categoryModel({
       name: categoryData.name,
-      main_params: categoryData.main_params || null,
+      parameters: categoryData.parameters,
     });
     const newCategory = await category.save();
 

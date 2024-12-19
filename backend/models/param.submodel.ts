@@ -1,12 +1,28 @@
 import mongoose from 'mongoose';
-import types from '../utils/paramsTypes';
-
+import paramsTypes from '../utils/paramsTypes';
+import { isUnique } from '../utils/array';
 const Schema = mongoose.Schema;
+
+const categoryParamSubModel = new Schema(
+  {
+    name: { type: String, required: true },
+    available: {
+      type: [Schema.Types.Mixed],
+      required: true,
+    },
+  },
+  { _id: false }
+);
 
 const paramSubModel = new Schema(
   {
     name: { type: String, required: true },
-    type: { type: String, enum: types.ALL, required: true },
+    type: {
+      type: String,
+      required: true,
+      lowercase: true,
+      enum: paramsTypes.ALL,
+    },
     content: {
       type: Schema.Types.Mixed,
       required: true,
@@ -15,17 +31,8 @@ const paramSubModel = new Schema(
   { _id: false }
 );
 
-paramSubModel.pre('save', function (next) {
-  if (String(typeof this.content) !== this.type) {
-    return next(
-      new Error(
-        `Content type must be ${this.type} and it's ${String(
-          typeof this.content
-        )}`
-      )
-    );
-  }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const paramValidator = (v: any[]) =>
+  Array.isArray(v) && v.map((e) => e.name).every(isUnique);
 
-  next();
-});
-export default paramSubModel;
+export { paramSubModel, categoryParamSubModel, paramValidator };

@@ -11,6 +11,7 @@ import account from '../utils/accountTypes';
 import { sellerModel } from '../models/users.models';
 import { removeItem } from '../utils/array';
 import { validateTokenFunction } from '../middlewares/validateToken';
+import { check_content_type } from '../utils/paramsTypes';
 
 const buildQuery = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -25,10 +26,8 @@ const buildQuery = (
   if (filters.seller) query.seller = { name: filters.seller };
   if (filters.category) query.category = filters.category;
   if (filters.minPrice) query.price = { $gte: filters.minPrice };
-  if (filters.maxPrice)
-    query.price = { ...query.price, $lte: filters.maxPrice };
-  if (filters.description)
-    query.description = new RegExp(filters.description, 'i');
+  if (filters.maxPrice) query.price = { ...query.price, $lte: filters.maxPrice };
+  if (filters.description) query.description = new RegExp(filters.description, 'i');
   if (filters.minRating) query.rating = { $gte: filters.minRating };
   if (!withHidden) query.isHidden = false;
   if (!withPending) query.isPending = false;
@@ -54,7 +53,7 @@ const getSelectedProducts = (withHidden = false, withPending = false) =>
     const products = await productModel
       .find(query.query)
       .setOptions(query.options)
-      .populate('reviews')
+      //   .populate('reviews')
       .select(exclude)
       .lean(true);
     res.json({
@@ -81,7 +80,7 @@ const getProductsByIds = asyncErrorWrapper(
 
     const products = await productModel
       .find({ _id: { $in: ids } })
-      .populate('reviews')
+      //   .populate('reviews')
       .select('-__v')
       .lean();
 
@@ -155,88 +154,109 @@ const deleteAllProducts = asyncErrorWrapper(
   }
 );
 
-const addProducts = asyncErrorWrapper(
-  async (req: ITokenRequest, res: Response, next: NextFunction) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const user = (await verifyUserFromToken(req)) as any;
-    const products = [];
+interface Category {
+  name: string;
+  parameters: { name: string; type: string }[];
+}
 
-    for await (const productData of req.body) {
-      if (!productData)
-        return next(
-          new AppError('No product data provided', 400, httpStatusText.FAIL)
-        );
-      //Validation
-      if (!productData.name || !productData.category || !productData.price) {
-        return next(
-          new AppError(
-            'Name, category and price are required fields.',
-            400,
-            httpStatusText.FAIL
-          )
-        );
-      }
-      if (productData.name.length < 3) {
-        const err = new AppError(
-          'Name must be more than 2 characters.',
-          400,
-          httpStatusText.FAIL
-        );
-        return next(err);
-      }
+const validateProductData = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  productData: any,
+  category: Category | null,
+  idx: number
+) => {
+  if (!category) return 'Category not found for product index ' + idx;
 
-      const category = await categoryModel
-        .findOne({ name: productData.category })
-        .lean();
+  if (!productData) return 'Empty product data for index ' + idx;
 
-      if (!category) {
-        const err = new AppError(
-          'Category not found',
-          404,
-          httpStatusText.FAIL
-        );
-        return next(err);
-      }
-      const random = Math.floor(Math.random() * 2);
-      products.push({
-        name: productData.name,
-        seller: { name: user.user.name?.first, id: user._id },
-        category: category.name,
-        price: productData.price,
-        description: productData.description,
-        // product_imgs: productData.product_imgs,
-        reviews: [],
-        main_params: productData.main_params || [],
-        rating: productData.rating,
-        isPending:
-          productData.isPending === undefined ? random : productData.isPending,
-        isHidden:
-          productData.isHidden === undefined ? random : productData.isPending,
-        total_sales: 0,
-        stock: productData.stock,
-      });
-    }
+  if (!productData.name || !productData.category || !productData.price)
+    return 'Name, category and price are required fields for product index ' + idx;
 
-    const newProducts = await productModel.insertMany(products, {
-      ordered: false,
-      rawResult: true,
-    });
+  if (productData.name.length < 3)
+    return 'Name must be more than 2 characters for product index ' + idx;
 
-    const userProducts = user.products.concat(
-      Object.values(newProducts.insertedIds).map((id) => id.toString())
+  if (
+    !productData.category_params ||
+    productData.category_params.length != category.parameters.length
+  )
+    return (
+      'Length of category_params !== Length category parameters in product index ' +
+      idx
     );
-    await user.updateOne({ products: userProducts });
+  for (const param of productData.category_params) {
+    const categoryParam = category.parameters.find((p) => p.name === param.name);
+    if (
+      !categoryParam ||
+      !Array.isArray(param.available) ||
+      !check_content_type(param.available, categoryParam.type)
+    )
+      return `Invalid parameter {${param.name}} for product index ` + idx;
+  }
+  return '';
+};
 
-    res.status(201).json({
-      status: httpStatusText.SUCCESS,
-      data: {
-        insertedIds: Object.values(newProducts.insertedIds),
-        insertedCount: newProducts.insertedCount,
-        message: 'Products added successfully and added to seller products',
-      },
+const addProducts = asyncErrorWrapper(async (req: ITokenRequest, res: Response) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const user = (await verifyUserFromToken(req)) as any;
+  const products = [];
+  const errors = [];
+  for await (const [i, productData] of req.body.entries()) {
+    const category = await categoryModel
+      .findOne({ name: productData.category })
+      .lean();
+    const err = validateProductData(productData, category, i);
+    if (err) {
+      errors.push(err);
+      continue;
+    }
+    const random = Math.floor(Math.random() * 2);
+    products.push({
+      name: productData.name,
+      seller: { name: user.user.name?.first, id: user._id },
+      category: category?.name,
+      price: productData.price,
+      description: productData.description,
+      // product_imgs: productData.product_imgs,
+      category_params: productData.category_params,
+      other_params: productData.other_params,
+      isPending:
+        productData.isPending === undefined ? random : productData.isPending,
+      isHidden: productData.isHidden === undefined ? random : productData.isPending,
+      total_sales: 0,
+      stock: productData.stock,
     });
   }
-);
+
+  const newProducts = await productModel.insertMany(products, {
+    ordered: false,
+    rawResult: true,
+  });
+
+  const userProducts = user.products.concat(
+    Object.values(newProducts.insertedIds).map((id) => id.toString())
+  );
+  await user.updateOne({ products: userProducts });
+
+  if (!newProducts.insertedCount)
+    return res.status(400).json({
+      status: httpStatusText.FAIL,
+      data: {
+        message: 'No products added',
+        validationErrors: newProducts.mongoose.validationErrors,
+        errors: errors,
+      },
+    });
+  res.status(201).json({
+    status: httpStatusText.SUCCESS,
+    data: {
+      insertedIds: Object.values(newProducts.insertedIds),
+      insertedCount: newProducts.insertedCount,
+      message: 'Products added successfully and added to seller products',
+      validationErrors: newProducts.mongoose.validationErrors,
+      errors: errors,
+    },
+  });
+});
 
 const getProduct = (hidden_for_account_types: string[] = []) =>
   asyncErrorWrapper(
@@ -248,12 +268,10 @@ const getProduct = (hidden_for_account_types: string[] = []) =>
       const product = await productModel
         .findById(req.params.productId)
         .select('-__v')
-        .populate('reviews')
+        // .populate('reviews')
         .lean();
       if (!product)
-        return next(
-          new AppError('Product not found', 404, httpStatusText.FAIL)
-        );
+        return next(new AppError('Product not found', 404, httpStatusText.FAIL));
       if (product.isHidden || product.isPending) {
         await validateTokenFunction(hidden_for_account_types)(req);
         const user = await verifyUserFromToken(req);
@@ -295,11 +313,7 @@ const deleteProduct = asyncErrorWrapper(
       user._id.toString() !== seller.id.toString()
     )
       return next(
-        new AppError(
-          'Unauthorized, Not your product!',
-          403,
-          httpStatusText.FAIL
-        )
+        new AppError('Unauthorized, Not your product!', 403, httpStatusText.FAIL)
       );
     removeItem(seller.products, product._id);
     await seller.save();

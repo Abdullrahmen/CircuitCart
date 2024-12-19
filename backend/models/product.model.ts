@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
-import paramSubModel from './param.submodel';
-
+import {
+  paramSubModel,
+  categoryParamSubModel,
+  paramValidator,
+} from './param.submodel';
 const Schema = mongoose.Schema;
 
 const productModel = new Schema({
@@ -14,7 +17,21 @@ const productModel = new Schema({
   description: { type: String },
   product_imgs: { type: [String] },
   reviews: { type: [Schema.Types.ObjectId], ref: 'Review' },
-  main_params: { type: [paramSubModel], required: true },
+  category_params: {
+    type: [categoryParamSubModel],
+    required: true,
+    validate: {
+      validator: paramValidator,
+      message: 'category_params must be an array of unique objects',
+    },
+  },
+  other_params: {
+    type: [paramSubModel],
+    validate: {
+      validator: paramValidator,
+      message: 'other_params must be an array of unique objects',
+    },
+  },
   rating: { type: Number, min: 0, max: 5 },
   stock: { type: Number, min: 0 },
   isPending: { type: Boolean, required: true },

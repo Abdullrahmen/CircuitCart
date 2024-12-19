@@ -5,4 +5,10 @@ const removeItem = <T>(arr: Array<T>, value: T): Array<T> => {
   }
   return arr;
 };
-export { removeItem };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const isUnique = (value: any, index: number, array: any[]): boolean => {
+  return array.indexOf(value) === array.lastIndexOf(value);
+};
+
+export { removeItem, isUnique };
