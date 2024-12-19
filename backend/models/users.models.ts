@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import userSubModel from './user.submodel';
-import { productSubModel } from './product.submodel';
 /*ALL THE SCHEMAS FOR THE USERS COLLECTIONS' THAT TAKE userSubModel as subDocument MUST BE HERE*/
 
 const Schema = mongoose.Schema;
@@ -10,7 +9,7 @@ const sellerSchema = new Schema({
   pendings: { type: [Schema.Types.ObjectId], ref: 'Product' },
   user: { type: userSubModel, required: true },
   isGuaranteed: { type: Boolean, required: true },
-  pendingOrders: { type: [productSubModel], required: true },
+  pendingOrders: { type: [Schema.Types.ObjectId], ref: 'Order' },
 });
 
 const buyerSchema = new Schema({

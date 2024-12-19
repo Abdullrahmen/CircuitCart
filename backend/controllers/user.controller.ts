@@ -8,6 +8,14 @@ import mongoose from 'mongoose';
 import { ITokenRequest } from '../interfaces/TokenRequest';
 import { JwtPayload } from 'jsonwebtoken';
 
+/**
+ * Deletes a collection from the MongoDB database.
+ *
+ * @param {string} collectionName - The name of the collection to be deleted.
+ * @throws {Error} If the database connection is not established.
+ * @throws {Error} If the database object is not available.
+ * @returns {Promise<boolean>} A promise that resolves to true if the collection is deleted, otherwise false.
+ */
 const deleteCollection = async (collectionName: string) => {
   if (!mongoose.connection.readyState) {
     throw new Error('Database connection is not established');
@@ -25,11 +33,7 @@ const userLogin = (account_type: string) =>
   AsyncError(async (req: Request, res: Response, next: NextFunction) => {
     const body = req.body;
     if (!accountTypes.ALL.includes(account_type)) {
-      const err = new AppError(
-        'Invalid account type',
-        400,
-        httpStatusText.FAIL
-      );
+      const err = new AppError('Invalid account type', 400, httpStatusText.FAIL);
       return next(err);
     }
 
@@ -83,9 +87,7 @@ const deleteUserFromToken = (account_type: string) =>
   AsyncError(async (req: ITokenRequest, res: Response, next: NextFunction) => {
     const jwt_data = req.jwt_data as JwtPayload;
     const model_args =
-      accountTypes.ModelArgs[
-        account_type as keyof typeof accountTypes.ModelArgs
-      ];
+      accountTypes.ModelArgs[account_type as keyof typeof accountTypes.ModelArgs];
     const userModel = mongoose.model(model_args[0], model_args[1]);
     const user = await userModel
       .findOneAndDelete({
@@ -104,9 +106,7 @@ const getUserFromToken = (account_type: string) =>
   AsyncError(async (req: ITokenRequest, res: Response, next: NextFunction) => {
     const jwt_data = req.jwt_data as JwtPayload;
     const model_args =
-      accountTypes.ModelArgs[
-        account_type as keyof typeof accountTypes.ModelArgs
-      ];
+      accountTypes.ModelArgs[account_type as keyof typeof accountTypes.ModelArgs];
     const userModel = mongoose.model(model_args[0], model_args[1]);
     const user = await userModel
       .findOne({
@@ -159,18 +159,24 @@ const getAllUsersByType = (get_type: string) =>
 const deleteAllUsersInCollection = (collectionName: string) =>
   AsyncError(async (req: ITokenRequest, res: Response, next: NextFunction) => {
     await verifyUserFromToken(req);
-    const result = await deleteCollection(collectionName);
-    if (!result) {
-      const err = new AppError(
-        `No ${collectionName} found`,
-        404,
-        httpStatusText.FAIL
+    let message = 'All ' + collectionName + ' deleted';
+    let result = await deleteCollection(collectionName);
+    if (!result)
+      return next(
+        new AppError(`No ${collectionName} found`, 404, httpStatusText.FAIL)
       );
-      return next(err);
+    if (collectionName === 'sellers') {
+      result = await deleteCollection('products');
+      message += ' and all products deleted';
     }
+    if (!result)
+      return next(
+        new AppError(`No ${collectionName} found`, 404, httpStatusText.FAIL)
+      );
+
     res.json({
       status: httpStatusText.SUCCESS,
-      data: { message: `All ${collectionName} deleted` },
+      data: { message },
     });
   });
 

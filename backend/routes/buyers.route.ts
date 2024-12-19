@@ -6,8 +6,8 @@ const router = Router();
 
 router
   .route('/')
-  .get([validateToken(account.ALL), controller.getAllBuyers])
-  .delete([validateToken(account.ALL), controller.deleteAllBuyers]);
+  .get([validateToken([account.MANAGER]), controller.getAllBuyers])
+  .delete([validateToken([account.MANAGER]), controller.deleteAllBuyers]);
 // router.route('/buyers/:id') -> managers
 
 router

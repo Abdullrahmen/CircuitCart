@@ -223,7 +223,7 @@ const addProducts = asyncErrorWrapper(async (req: ITokenRequest, res: Response) 
         productData.isPending === undefined ? random : productData.isPending,
       isHidden: productData.isHidden === undefined ? random : productData.isPending,
       total_sales: 0,
-      stock: productData.stock,
+      stock: productData.stock || 1000,
     });
   }
 

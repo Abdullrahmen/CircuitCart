@@ -32,7 +32,7 @@ const productModel = new Schema({
       message: 'other_params must be an array of unique objects',
     },
   },
-  rating: { type: Number, min: 0, max: 5 },
+  rating: { type: Number, min: 0, max: 5, default: 0 },
   stock: { type: Number, min: 0 },
   isPending: { type: Boolean, required: true },
   isHidden: { type: Boolean, required: true },

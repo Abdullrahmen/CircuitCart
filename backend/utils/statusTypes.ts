@@ -1,25 +1,29 @@
+// must be uppercase and in order (process after pending, etc.)
 export default {
   PRODUCT: {
     PENDING: 'PENDING',
     PROCESSING: 'PROCESSING',
-    TO_WAREHOUSE: 'Delivering to Warehouse',
-    AT_WAREHOUSE: 'At Warehouse',
-    ALL: ['PENDING', 'PROCESSING', 'Delivering to Warehouse', 'At Warehouse'],
+    TO_WAREHOUSE: 'DELIVERING TO WAREHOUSE',
+    AT_WAREHOUSE: 'AT WAREHOUSE',
+    COMPLETED: 'COMPLETED',
+    ALL: [
+      'PENDING', // Automatically set when product is created
+      'PROCESSING', // Set by seller when product is being processed
+      'DELIVERING TO WAREHOUSE', // Set by seller when product is being delivered to warehouse
+      'AT WAREHOUSE', // Set by manager when product is at warehouse
+      'COMPLETED', // Automatically set when product is delivered
+    ],
   },
   ORDER: {
-    PENDING: 'PENDING',
     AWAITING_PRODUCTS_RECEPTION: 'AWAITING PRODUCTS RECEPTION',
-    SHIPPED: 'SHIPPED',
-    IN_TRANSIT: 'IN_TRANSIT',
-    OUT_FOR_DELIVERY: 'OUT_FOR_DELIVERY',
+    AT_WAREHOUSE: 'AT WAREHOUSE',
+    OUT_FOR_DELIVERY: 'OUT FOR DELIVERY',
     DELIVERED: 'DELIVERED',
     ALL: [
-      'PENDING',
-      'AWAITING PRODUCTS RECEPTION',
-      'SHIPPED',
-      'IN_TRANSIT',
-      'OUT_FOR_DELIVERY',
-      'DELIVERED',
+      'AWAITING PRODUCTS RECEPTION', //Automatically set when order is created
+      'AT WAREHOUSE', //Automatically set when all products are at warehouse
+      'OUT FOR DELIVERY', //Set by manager when order is ready to be delivered
+      'DELIVERED', //Set by manager when order is delivered
     ],
   },
 };

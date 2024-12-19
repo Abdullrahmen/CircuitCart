@@ -1,16 +1,17 @@
 import { Response, NextFunction } from 'express';
 import { ITokenRequest } from '../interfaces/TokenRequest';
 import asyncErrorWrapper from '../middlewares/asyncErrorWrapper';
-import { verifyUserFromToken } from './user.controller';
+import { deleteCollection, verifyUserFromToken } from './user.controller';
 import orderModel from '../models/order.model';
 import productModel from '../models/product.model';
 import mongoose from 'mongoose';
 import { isInt } from 'validator';
-
 import AppError from '../utils/appError';
 import httpStat from '../utils/httpStatusText';
-import statusTypes from '../utils/statusTypes';
+import STAT from '../utils/statusTypes';
 import { buyerModel, sellerModel } from '../models/users.models';
+import accountTypes from '../utils/accountTypes';
+import { isUnique } from '../utils/array';
 
 interface IProduct {
   id: string;
@@ -91,6 +92,8 @@ const createOrder = asyncErrorWrapper(
         );
       }
     }
+    if (!body.products.map((product: IProduct) => product.id).every(isUnique))
+      return next(new AppError('Products must be unique', 400, httpStat.FAIL));
 
     // Get all the products from the database
     const full_products = await productModel.find({
@@ -123,7 +126,7 @@ const createOrder = asyncErrorWrapper(
         other_params: product.other_params,
         quantity: product.quantity,
         price: full_product.price,
-        status: statusTypes.PRODUCT.PENDING,
+        status: STAT.PRODUCT.PENDING,
       });
       total_price += product.quantity * full_product.price;
     }
@@ -131,27 +134,17 @@ const createOrder = asyncErrorWrapper(
     const order = await orderModel.create({
       buyer: user._id,
       products: validatedProducts,
-      status: statusTypes.ORDER.PENDING,
       total_price: total_price,
       date: new Date(),
     });
+    if (!order) return next(new AppError('Order not created', 500, httpStat.FAIL));
 
-    sellerModel.bulkWrite(
-      validatedProducts.map((product) => ({
-        updateOne: {
-          filter: { _id: product.seller },
-          update: {
-            $push: {
-              pendingOrders: validatedProducts.filter(
-                (p) => p.seller === product.seller
-              ),
-            },
-          },
-        },
-      }))
+    //TODO when there is a problem with the seller, the order should be deleted
+    await sellerModel.updateMany(
+      { _id: { $in: validatedProducts.map((p) => p.seller) } },
+      { $push: { pendingOrders: order._id } }
     );
-
-    buyerModel.updateOne({ _id: user._id }, { $push: { orders: order._id } });
+    await buyerModel.updateOne({ _id: user._id }, { $push: { orders: order._id } });
 
     res.status(201).json({
       status: httpStat.SUCCESS,
@@ -161,11 +154,234 @@ const createOrder = asyncErrorWrapper(
   }
 );
 
+const getAllOrders = asyncErrorWrapper(async (req: ITokenRequest, res: Response) => {
+  await verifyUserFromToken(req);
+  const orders = await orderModel.find({});
+  res.status(200).json({
+    status: httpStat.SUCCESS,
+    message: 'Orders retrieved successfully',
+    data: orders,
+  });
+});
+
+const deleteAllOrders = asyncErrorWrapper(
+  async (req: ITokenRequest, res: Response, next: NextFunction) => {
+    await verifyUserFromToken(req);
+    await sellerModel.updateMany({}, { pendingOrders: [] });
+    await buyerModel.updateMany({}, { orders: [] });
+    if (await deleteCollection('orders'))
+      return res.status(200).json({
+        status: httpStat.SUCCESS,
+        message: 'All orders deleted successfully and all users updated',
+      });
+    return next(new AppError('No orders found / deleted', 404, httpStat.FAIL));
+  }
+);
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getSellerProductsFromOrder = (seller: any, order: any) => {
+  const products = order.products.filter(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (p: any) => p.seller.toString() === seller._id.toString()
+  );
+  return { _id: order._id, products };
+};
+
+const getOrderById = asyncErrorWrapper(
+  async (req: ITokenRequest, res: Response, next: NextFunction) => {
+    const user = await verifyUserFromToken(req);
+    let select = '-__v';
+    if (
+      user.user.account_type === accountTypes.BUYER &&
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      !(user as any).orders.includes(req.params.orderId)
+    )
+      return next(
+        new AppError('You are not authorized to view this order', 403, httpStat.FAIL)
+      );
+
+    if (user.user.account_type === accountTypes.SELLER) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (!(user as any).pendingOrders.includes(req.params.orderId))
+        return next(
+          new AppError(
+            'You are not authorized to view this order',
+            403,
+            httpStat.FAIL
+          )
+        );
+      select = '+products +_id';
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let order: any = await orderModel
+      .findById(req.params.orderId)
+      .lean()
+      .select(select);
+    if (!order) return next(new AppError('Order not found', 404, httpStat.FAIL));
+    if (user.user.account_type === accountTypes.SELLER)
+      order = getSellerProductsFromOrder(user, order);
+
+    res.status(200).json({
+      status: httpStat.SUCCESS,
+      message: 'Order retrieved successfully',
+      data: order,
+    });
+  }
+);
+
+const updateProductStatus = asyncErrorWrapper(
+  async (req: ITokenRequest, res: Response, next: NextFunction) => {
+    const user = await verifyUserFromToken(req);
+    if (!req.params.orderId || !mongoose.Types.ObjectId.isValid(req.params.orderId))
+      return next(new AppError('Invalid order id', 400, httpStat.FAIL));
+    if (!req.body.status)
+      return next(new AppError('Status field is required', 400, httpStat.FAIL));
+
+    const to_stat = req.body.status.toUpperCase();
+    const stats = STAT.PRODUCT.ALL;
+    if (!stats.includes(to_stat))
+      return next(
+        new AppError(
+          'Invalid status \n' + 'Product statuses are: ' + stats.join(', '),
+          400,
+          httpStat.FAIL
+        )
+      );
+    if (
+      to_stat === STAT.PRODUCT.COMPLETED &&
+      user.user.account_type === accountTypes.SELLER
+    )
+      return next(
+        new AppError(
+          'Seller cannot update the status to completed',
+          403,
+          httpStat.FAIL
+        )
+      );
+
+    const order = await orderModel.findById(req.params.orderId);
+    if (!order) return next(new AppError('Order not found', 404, httpStat.FAIL));
+    const product = order.products.find(
+      (p) => p.id.toString() === req.params.productId
+    );
+    if (!product)
+      return next(
+        new AppError('Product not found in this order', 404, httpStat.FAIL)
+      );
+
+    if (
+      user.user.account_type === accountTypes.SELLER &&
+      (product.seller.toString() !== user._id.toString() ||
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        !(user as any).pendingOrders.includes(req.params.orderId))
+    )
+      return next(
+        new AppError(
+          'You are not authorized to update this product',
+          403,
+          httpStat.FAIL
+        )
+      );
+
+    if (!stats.slice(stats.indexOf(product.status) + 1).includes(to_stat))
+      return next(
+        new AppError(
+          `Product status is already ${product.status}`,
+          400,
+          httpStat.FAIL
+        )
+      );
+
+    product.status = to_stat;
+    if (product.status === STAT.PRODUCT.AT_WAREHOUSE)
+      if (order.products.every((p) => p.status === STAT.PRODUCT.AT_WAREHOUSE))
+        order.status = STAT.ORDER.AT_WAREHOUSE;
+    await order.save();
+
+    res.status(200).json({
+      status: httpStat.SUCCESS,
+      message: 'Product status updated successfully to ' + to_stat,
+    });
+  }
+);
+
+const updateOrderStatus = asyncErrorWrapper(
+  async (req: ITokenRequest, res: Response, next: NextFunction) => {
+    await verifyUserFromToken(req);
+    if (!req.params.orderId || !mongoose.Types.ObjectId.isValid(req.params.orderId))
+      return next(new AppError('Invalid order id', 400, httpStat.FAIL));
+    if (!req.body.status)
+      return next(new AppError('Status field is required', 400, httpStat.FAIL));
+
+    const to_stat = req.body.status.toUpperCase();
+    const stats = STAT.ORDER.ALL;
+    if (!stats.includes(to_stat))
+      return next(
+        new AppError(
+          'Invalid status \n' + 'Order statuses are: ' + stats.join(', '),
+          400,
+          httpStat.FAIL
+        )
+      );
+    if (
+      to_stat === STAT.ORDER.AWAITING_PRODUCTS_RECEPTION ||
+      to_stat === STAT.ORDER.AT_WAREHOUSE
+    )
+      return next(
+        new AppError(
+          'Cannot update order status to ' +
+            to_stat +
+            ' because it is automatically updated status \nOther order statuses are: ' +
+            stats.join(', '),
+          400,
+          httpStat.FAIL
+        )
+      );
+
+    const order = await orderModel.findById(req.params.orderId);
+    if (!order) return next(new AppError('Order not found', 404, httpStat.FAIL));
+
+    if (order.status === STAT.ORDER.AWAITING_PRODUCTS_RECEPTION)
+      return next(
+        new AppError(
+          'Cannot update order status until all products are received',
+          400,
+          httpStat.FAIL
+        )
+      );
+    if (!stats.slice(stats.indexOf(order.status) + 1).includes(to_stat))
+      return next(
+        new AppError(`Order status is already ${order.status}`, 400, httpStat.FAIL)
+      );
+
+    order.status = to_stat;
+    if (order.status === STAT.ORDER.DELIVERED) {
+      order.products.forEach((p) => (p.status = STAT.PRODUCT.COMPLETED));
+      await sellerModel.updateMany(
+        { _id: { $in: order.products.map((p) => p.seller) } },
+        { $pull: { pendingOrders: order._id } }
+      );
+      await productModel.updateMany(
+        { _id: { $in: order.products.map((p) => p.id) } },
+        { $inc: { total_sales: 1 } }
+      );
+    }
+    await order.save();
+
+    res.status(200).json({
+      status: httpStat.SUCCESS,
+      message: 'Order status updated successfully to ' + to_stat,
+    });
+  }
+);
+
 export default {
   createOrder,
-  // getOrderById,
-  // getAllOrders,
-  // updateOrderStatus,
-  // createReviews,
+  getOrderById,
+  getAllOrders,
+  deleteAllOrders,
+  updateProductStatus,
+  updateOrderStatus,
   // getOrdersFromToken,
 };

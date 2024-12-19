@@ -8,7 +8,7 @@ const reviewSchema = new Schema({
   title: String,
   review: String,
   rating: { type: Number, min: 0, max: 5, required: true },
-  // quantity: { type: Number, required: true },
+  quantity: { type: Number, required: true },
 });
 const reviewModel = mongoose.model('Review', reviewSchema);
 
