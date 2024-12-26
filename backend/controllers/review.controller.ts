@@ -1,17 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { ITokenRequest } from '../interfaces/TokenRequest';
 import asyncErrorWrapper from '../middlewares/asyncErrorWrapper';
-// import { deleteCollection, verifyUserFromToken } from './user.controller';
 import orderModel from '../models/order.model';
 import productModel from '../models/product.model';
-// import mongoose from 'mongoose';
 import { isInt } from 'validator';
 import AppError from '../utils/appError';
 import httpStat from '../utils/httpStatusText';
-// import STAT from '../utils/statusTypes';
-// import { buyerModel, sellerModel } from '../models/users.models';
-// import accountTypes from '../utils/accountTypes';
-// import { isUnique } from '../utils/array';
 import { reviewModel } from '../models/review.model';
 import { deleteCollection, verifyUserFromToken } from './user.controller';
 
@@ -93,11 +87,38 @@ const deleteAllReviews = asyncErrorWrapper(
   }
 );
 
+const getReviewsByProductId = asyncErrorWrapper(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { productId } = req.params;
+    const reviews = await reviewModel
+      .find({ product: productId })
+      .select('-__v')
+      .lean();
+    if (!reviews) return next(new AppError('No reviews found', 404, httpStat.FAIL));
+    res.status(200).json({
+      status: httpStat.SUCCESS,
+      data: reviews,
+    });
+  }
+);
+
+const getReviewById = asyncErrorWrapper(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { reviewId } = req.params;
+    const review = await reviewModel.findById(reviewId).select('-__v').lean();
+    if (!review) return next(new AppError('Review not found', 404, httpStat.FAIL));
+    res.status(200).json({
+      status: httpStat.SUCCESS,
+      data: review,
+    });
+  }
+);
+
 export default {
   createReview,
   deleteAllReviews,
   getAllReviews,
-  // getReviewsByProductId,
-  // getReviewById,
+  getReviewsByProductId,
+  getReviewById,
   // deleteReviewById,
 };
